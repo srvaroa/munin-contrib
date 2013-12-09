@@ -1,0 +1,33 @@
+#!/bin/sh
+# munin plugin to show online network hosts on a subnet (needs nmap)
+# link with subnet name as suffix like _192.168.1
+#
+# Built upon net_hosts_ by:
+# # (c) 2011 jon@jon.bpa.nu
+#%# family=manual
+
+SUBNET=`echo $0 | cut -d'_' -f4`
+
+if [ $SUBNET != "" ]; then
+	HOSTS=`nmap -sn "$SUBNET.0/24" | grep report | cut -d' ' -f5` 
+else
+	echo "Could not get subnet name ($SUBNET)"
+	exit -1
+fi
+
+if [ "$1" = "config" ]; then
+	echo "graph_title hosts on network $SUBNET.0/24"
+	echo "graph_vlabel hosts"
+	echo "graph_category network"
+fi
+
+for H in $HOSTS
+do
+	HOST=`echo $H | sed -e 's/\./_/g'`
+	if [ "$1" = "config" ]; then
+		echo "_$HOST.label $H"
+		echo "_$HOST.draw AREASTACK"
+	else
+		echo "_$HOST.value 1"
+	fi
+done
